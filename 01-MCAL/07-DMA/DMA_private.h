@@ -12,6 +12,8 @@
 
 #define DMA1       			 ((DMA_Typedef *) DMA1_BASE)
 
+#define DMA1_NUM_OF_CHANNELS		7
+
 #define DMA1_CHANNEL1_BASE	 (DMA1_BASE + 0x08)	
 #define DMA1_CHANNEL2_BASE   (DMA1_BASE + 0x1C)
 #define DMA1_CHANNEL3_BASE   (DMA1_BASE + 0x30)
@@ -21,10 +23,10 @@
 #define DMA1_CHANNEL7_BASE   (DMA1_BASE + 0x80)
 
 
-#define DMA1_CHANNEL1			  ((DMA_Channel_Typedef *)	DMA1_CHANNEL1_BASE)	
-#define DMA1_CHANNEL2				((DMA_Channel_Typedef *)	DMA1_CHANNEL2_BASE)
-#define DMA1_CHANNEL3				((DMA_Channel_Typedef *)	DMA1_CHANNEL3_BASE)
-#define DMA1_CHANNEL4				((DMA_Channel_Typedef *)	DMA1_CHANNEL4_BASE)
+#define DMA1_CHANNEL1       ((DMA_Channel_Typedef *)	DMA1_CHANNEL1_BASE)	
+#define DMA1_CHANNEL2		((DMA_Channel_Typedef *)	DMA1_CHANNEL2_BASE)
+#define DMA1_CHANNEL3		((DMA_Channel_Typedef *)	DMA1_CHANNEL3_BASE)
+#define DMA1_CHANNEL4		((DMA_Channel_Typedef *)	DMA1_CHANNEL4_BASE)
 #define DMA1_CHANNEL5       ((DMA_Channel_Typedef *)	DMA1_CHANNEL5_BASE)
 #define DMA1_CHANNEL6       ((DMA_Channel_Typedef *)	DMA1_CHANNEL6_BASE)
 #define DMA1_CHANNEL7       ((DMA_Channel_Typedef *)	DMA1_CHANNEL7_BASE)

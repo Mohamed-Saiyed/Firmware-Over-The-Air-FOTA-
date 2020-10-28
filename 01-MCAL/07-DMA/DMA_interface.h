@@ -56,9 +56,23 @@ typedef enum
 	
 }DMA_Direction_e;
 
+typedef enum 
+{
+	DMA_Channel1_ID 	= 0 ,
+	DMA_Channel2_ID 	= 1 ,
+	DMA_Channel3_ID 	= 2 ,
+	DMA_Channel4_ID 	= 3 ,
+	DMA_Channel5_ID 	= 4 ,
+	DMA_Channel6_ID 	= 5 ,
+	DMA_Channel7_ID 	= 6 
+	
+}DMA_ChannelID_e;
+
 typedef struct 
 {
 	DMA_Channel_Typedef  *DMA_Channel 			;
+	
+	DMA_ChannelID_e	Channel_Id					;
 				
 	DMA_Mode_e Mode 				  			;
 				
