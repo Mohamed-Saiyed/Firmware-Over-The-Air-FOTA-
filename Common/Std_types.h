@@ -23,10 +23,11 @@ typedef signed long  int  int32_t	;
 typedef enum
 {
 	E_OK					= 0, 
-	E_TIMEOUT				= 0,
-	E_NOK 					= 1,
-	NULL_PTR 				= 2,
-	MULTIPLE_INITIALIZATION = 3
+	E_TIMEOUT				= 1,
+	E_NOK 					= 2,
+	NULL_PTR 				= 3,
+	MULTIPLE_INITIALIZATION = 4
+	
 }ErrorStatus;
 
 
