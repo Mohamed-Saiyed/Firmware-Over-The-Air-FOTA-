@@ -46,7 +46,7 @@
 #define RCC_USART3_ID 	82
 #define RCC_UART4_ID	83
 #define RCC_UART5_ID    84
-#define RCC_I2C1_ID		84
+#define RCC_I2C1_ID		85
 #define RCC_I2C2_ID		86
 #define RCC_CAN1_ID		89
 #define RCC_CAN2_ID		90
