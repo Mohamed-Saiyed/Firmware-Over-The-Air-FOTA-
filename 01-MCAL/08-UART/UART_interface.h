@@ -76,7 +76,7 @@ typedef struct
 }Uart_ConfigType;
 
 
-void UART_EnableInterrupt(USART_Typedef *USARTx , Uart_Interrupt Int);
+void UART_EnableInterrupt(USART_Typedef *USARTx , Uart_ChannelId Id , Uart_Interrupt Int);
 void Uart_SetBaudRate(const Uart_ConfigType * Config);
 ErrorStatus UART_Init(const Uart_ConfigType * Config);
 void Uart_SetPins(Uart_ChannelId Id);

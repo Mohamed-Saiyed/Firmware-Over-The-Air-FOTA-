@@ -30,9 +30,13 @@ ErrorStatus ESP_SendData(uint8_t *DataBuffer , uint8_t *DataSize);
 *
 */
 
-void ESP_ReceiveData(uint8_t *StoredataBuffer);
+void ESP_Dispatcher(uint8_t *IP, uint8_t *DataToSendBuffer, uint8_t *DataToSendSize, uint8_t *StoredataBuffer);
 /*
 *
+*
+*/
+void ESP_Receive(uint8_t *StoredataBuffer);
+/*
 *
 */
 

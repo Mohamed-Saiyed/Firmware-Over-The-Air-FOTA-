@@ -53,5 +53,6 @@ typedef struct
 
 void Reset_RX_Buffer(void);
 void USART_Hndler(Uart_ChannelId Id);
+static void Enable_UartNvicInterrput(Uart_ChannelId Id);
 
 #endif /*UART_PRIVATE_H*/

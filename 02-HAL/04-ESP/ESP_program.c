@@ -6,7 +6,10 @@
 #include "Std_types.h"
 #include "BIT_MATH.h"
 
+
+#include "NVIC_interface.h"
 #include "UART_interface.h"
+#include "SysTick_interface.h"
 
 #include "ESP_interface.h"
 #include "ESP_private.h"
@@ -21,7 +24,7 @@ static uint32_t ESP_BufferCounter ;
 void ESP_CallBack(void)
 {
 	/*Store the crrent byte into the receiving buffer*/
-	ESP_RX_Buffer[ESP_BufferCounter] = (uint8_t)USART1->DR ;
+	ESP_RX_Buffer[ESP_BufferCounter] = (uint8_t)ESP_USART_CHANNEL->DR ;
 	/*incremnt the buffer counter*/
 	ESP_BufferCounter++;
 	/*reset the buffer counter if it reachs the max receiving buffer size*/
@@ -37,7 +40,7 @@ void ESP_CallBack(void)
 }
 
 
-void UartEsp_init(void)
+static void UartEsp_init(void)
 {
 	
 	UART.USARTx     = ESP_USART_CHANNEL 				;
@@ -59,13 +62,18 @@ ErrorStatus ESP_Init(void)
 	uint32_t Local_TimeOut = 0   ;
 	/*temp variable to check for the max time out*/
 	uint8_t  Local_MaxTime = 0   ;
-	
+	/*Initialize the systick*/
+	SysTick_Init();
 	/*initialize the esp Uart channel*/
 	UartEsp_init();
 	/*set the the uart receiving call back function*/
 	UART_SetCallBack(ESP_USART_CHANNEL_ID , ESP_CallBack , RECEIVE_INTERRUPT);
 	/*Enable the uart channel RX interrupt*/
-	UART_EnableInterrupt(ESP_USART_CHANNEL , RECEIVE_INTERRUPT);
+	UART_EnableInterrupt(ESP_USART_CHANNEL ,ESP_USART_CHANNEL_ID,RECEIVE_INTERRUPT);
+	/*First reset the wifi moudle*/
+	UART_TransmitSynchronous(ESP_USART_CHANNEL , "AT+RST\r\n");
+	/*wait for it to connect to the network and get an ip address*/
+	SysTick_SetBusyWait(8000000);
 	/*command to Disable the ESP echo*/
 	UART_TransmitSynchronous(ESP_USART_CHANNEL , "ATE0\r\n");
 	/*wait until the esp responds with OK*/
@@ -98,6 +106,7 @@ ErrorStatus ESP_Init(void)
 	  }
 		  
 	}
+	
 	/*Reset the local variable to be used again in the next command*/
     Local_TimeOut = 0 ;
 	Local_MaxTime = 0 ;
@@ -220,37 +229,48 @@ ErrorStatus ESP_ServerConnect(uint8_t *IP)
 	UART_TransmitSynchronous(ESP_USART_CHANNEL , ",");
 	UART_TransmitSynchronous(ESP_USART_CHANNEL , "80");
 	UART_TransmitSynchronous(ESP_USART_CHANNEL , "\r\n");
+	/*Some delay for the esp to conntect to the server*/
+	SysTick_SetBusyWait(5000);
 	
-	/*wait until the esp responds with OK*/
-	while(Find_string(ESP_RX_Buffer , "OK") == 0) 
+	/*if the esp is already connected to the server don't wait for the OK*/
+	if((Find_string(ESP_RX_Buffer , "ALREADY") == 1) || (Find_string(ESP_RX_Buffer , "busy") == 1))
 	{
-	   /*increment the time out counter*/
-		Local_TimeOut++;  
-		  
-		if(Local_TimeOut == ESP_MAX_RX_TIMEOUT)  
-		{  
-		  /*time out reachs the maximum time out reset the time out counter*/  
-		  Local_TimeOut = 0 ;  
-		  /*increment the repeat receiving counter*/  
-		  Local_MaxTime++;  
-		    
-		  if(Local_MaxTime == ESP_MAX_TIME_COUNT)  
-		  {  
-			  /*when it reachs the maximum number of command repeat sending without any response  
-			    but the status as timeout error and break the loop	  */  
-			  Status = E_TIMEOUT ;  
-			  break;  
-		  }  
-		  else
-		  {
-			/*Reset esp receving buffer*/
-			  Reset_Buffer();
-			/*Send the same command again */
-			  ESP_ServerConnect(IP);
-		  }
-	  }
-		  
+		/*Do Nothing*/
 	}
+	else
+	{
+		/*wait until the esp responds with OK*/
+		while(Find_string(ESP_RX_Buffer , "OK") == 0) 
+		{
+		/*increment the time out counter*/
+			Local_TimeOut++;  
+			
+			if(Local_TimeOut == ESP_MAX_RX_TIMEOUT)  
+			{  
+			/*time out reachs the maximum time out reset the time out counter*/  
+			Local_TimeOut = 0 ;  
+			/*increment the repeat receiving counter*/  
+			Local_MaxTime++;  
+				
+			if(Local_MaxTime == ESP_MAX_TIME_COUNT)  
+			{  
+				/*when it reachs the maximum number of command repeat sending without any response  
+					but the status as timeout error and break the loop	  */  
+				Status = E_TIMEOUT ;  
+				break;  
+			}  
+			else
+			{
+				/*Reset esp receving buffer*/
+				Reset_Buffer();
+				/*Send the same command again */
+				ESP_ServerConnect(IP);
+			}
+		}
+			
+		}
+	}
+	
 	
 	Reset_Buffer();
 	
@@ -283,7 +303,7 @@ ErrorStatus ESP_SendData(uint8_t *DataBuffer , uint8_t *DataSize)
 		  Local_TimeOut = 0 ;  
 		  /*increment the repeat receiving counter*/  
 		  Local_MaxTime++;  
-		    
+		     
 		  if(Local_MaxTime == ESP_MAX_TIME_COUNT)  
 		  {  
 			  /*when it reachs the maximum number of command repeat sending without any response  
@@ -295,10 +315,7 @@ ErrorStatus ESP_SendData(uint8_t *DataBuffer , uint8_t *DataSize)
 		  {
 			/*Reset esp receving buffer*/
 			  Reset_Buffer();
-			/*Send the same command again */
-			UART_TransmitSynchronous(ESP_USART_CHANNEL , "AT+CIPSEND=");
-			UART_TransmitSynchronous(ESP_USART_CHANNEL , DataSize); 
-			UART_TransmitSynchronous(ESP_USART_CHANNEL , "\r\n"); 	
+			/*Send the same command again */	
 		  }
 		  
 	  }
@@ -311,8 +328,35 @@ ErrorStatus ESP_SendData(uint8_t *DataBuffer , uint8_t *DataSize)
 	return Status ; 
 }
 
-void ESP_ReceiveData(uint8_t *StoredataBuffer)
+void ESP_Receive(uint8_t *StoredataBuffer)
 {
+	volatile uint8_t Local_Temp = 0 ;
+	/*temp variable to count the timeout*/
+	uint32_t Local_TimeOut = 0   ;
+	/*temp variable to check for the max time out*/
+	uint8_t  Local_MaxTime = 0   ;
+	
+	while(Local_Temp !=1)
+	{
+		/*Wait for the complete data receiving */
+		Local_Temp = Find_string(ESP_RX_Buffer , "CLOSED");
+		/*increment the time out counter*/
+		Local_TimeOut++;  
+		  
+		if(Local_TimeOut == ESP_MAX_RX_TIMEOUT)  
+		{  
+		  /*time out reachs the maximum time out reset the time out counter*/  
+		  Local_TimeOut = 0 ;  
+		  /*jumb out of the looop*/
+		  break;
+		}
+		else
+		{
+			/*Do Nothing*/
+		}
+		    
+		
+	}
 	/*check for all data is sent and stored on the esp rx buffer*/
 	if(Find_string(ESP_RX_Buffer , "OK") != 0 && Find_string(ESP_RX_Buffer , "CLOSED") != 0)
 	{
@@ -341,19 +385,27 @@ void ESP_ReceiveData(uint8_t *StoredataBuffer)
 			StoredataBuffer[Local_Index] = ESP_RX_Buffer[Local_Index + StartOfData] ;
 			Local_Index++;
 		}
-		
+			
 		/*Reset the esp rx buffer after copying the data*/	
-		Reset_Buffer();
-		ESP_ServerConnect("162.253.155.226");
-  	ESP_SendData("GET http://imtarm.freevar.com/status.txt" , "42");
+		Reset_Buffer();	
 	}
 	else
 	{
 		/*Do Nothing*/
 	}
 }
+
+void ESP_Dispatcher(uint8_t *IP, uint8_t *DataToSendBuffer, uint8_t *DataToSendSize, uint8_t *StoredataBuffer)
+{	
+		//SysTick_SetBusyWait(10000);
+		ESP_ServerConnect(IP);
+		ESP_SendData(DataToSendBuffer , DataToSendSize); 
+		ESP_Receive(StoredataBuffer);
+	
+}
  
-void Reset_Buffer(void)
+/**************************************************************************************/
+static void Reset_Buffer(void)
 {
 	for(uint32_t Local_Index = 0 ; Local_Index <ESP_MAX_RX_BUFFER_SIZE ; Local_Index++)
 	{
@@ -365,7 +417,7 @@ void Reset_Buffer(void)
 
 /********************************************************************/
 /*helper function to find a word on a string*/
-uint8_t Find_string(uint8_t *string , uint8_t *string_nedded)
+static uint8_t Find_string(uint8_t *string , uint8_t *string_nedded)
 {
 	uint8_t ret_value = 0 ;
 	uint32_t match = 0;

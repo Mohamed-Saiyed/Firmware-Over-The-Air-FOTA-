@@ -10,6 +10,8 @@
 #include "RCC_Config.h"
 #include "RCC_interface.h"
 #include "AFIO_interface.h"
+#include "NVIC_interface.h"
+
 
 #include "UART_interface.h"
 #include "UART_private.h"
@@ -205,8 +207,9 @@ ErrorStatus UART_ReceiveSynchronous(USART_Typedef *USARTx ,uint8_t *Buffer , uin
 	return State ;
 }
 
-void UART_EnableInterrupt(USART_Typedef *USARTx , Uart_Interrupt Int)
+void UART_EnableInterrupt(USART_Typedef *USARTx , Uart_ChannelId Id , Uart_Interrupt Int)
 {
+	Enable_UartNvicInterrput(Id);
 	switch(Int)
 	{
 		case RECEIVE_INTERRUPT : SET_BIT(USARTx->CR1 , 5);		break;
@@ -217,6 +220,18 @@ void UART_EnableInterrupt(USART_Typedef *USARTx , Uart_Interrupt Int)
 		break;
 		
 	}
+}
+
+static void Enable_UartNvicInterrput(Uart_ChannelId Id)
+{
+	switch(Id)
+		{
+			case USART1_Id: 	NVIC_EnableInterrupt(USART1_IRQn);		break;
+			case USART2_Id: 	NVIC_EnableInterrupt(USART2_IRQn);		break;
+			case USART3_Id: 	NVIC_EnableInterrupt(USART3_IRQn);		break;
+			default:													break;
+		}
+	
 }
 
 void UART_SetCallBack(Uart_ChannelId Id , void (*ptr) (void) , Uart_Interrupt Int)

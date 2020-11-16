@@ -5,12 +5,12 @@ LDFLAGS = --specs=nano.specs -T STM32f103xx.ld -Wl,-Map=final.map
 CL = rm -rf *.o *.hex *.elf *.map
 
 .PHONY: all
-.PHONY: clean
+.PHONY: clean	
 
 OBJS = Stm32f103C8T6_Startup.o main.o GPIO_Program.o RCC_Program.o syscalls.o 	final.elf final.hex
 all: $(OBJS)
 
-
+GET http://mosayed11.freevar.com/status.txt
 clean:
 	$(CL)
 	
